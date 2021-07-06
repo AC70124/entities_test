@@ -1,0 +1,33 @@
+try {
+  library(
+    identifier: 'jsl-jenkins-shared-library-local@release/20210624',
+    retriever: modernSCM(
+      [
+        $class: 'GitSCMSource',
+        remote: "/app/jenkins/git/jsl-jenkins-shared-library.git",
+        extensions: [
+          [$class: 'WipeWorkspace']
+        ]
+      ]
+    )
+  ) _
+} catch (Exception Ex) {
+  library(
+    identifier: 'jsl-jenkins-shared-library@release/20210624',
+    retriever: modernSCM(
+      [
+        $class: 'GitSCMSource',
+        remote: "git@github.com:CenturyLink/jsl-jenkins-shared-library.git",
+        credentialsId: 'SCMAUTO_SSH_DEVOPS_PIPELINE',
+        extensions: [
+          [$class: 'WipeWorkspace']
+        ]
+      ]
+    )
+  ) _
+}
+
+jslPipelinePortalFrameworkMicroapp(
+  projectName: 'po-adaptive-network',
+  dockerRepo: 'poadaptivenetwork'
+)

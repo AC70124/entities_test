@@ -1,0 +1,10 @@
+export const ALL_DATA: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/all/new`;
+export const UNIQUE_STORES: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/uniquestores`;
+export const CLEAR_CACHE: string = `/Enterprise/v1/Security/adaptiveNetwork/clearCache`;
+export const TE_STORE: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/alert/thousandeyes/`;
+export const MERAKI_STORE: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/alert/meraki/`;
+export const AEROHIVE_STORE: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/alert/aerohive/`;
+export const CRADLEPOINT_STORE: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/alert/cradlepoint/`;
+export const MIST_STORE: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/alert/mist/`;
+export const STORE_DATA: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/store/`;
+export const TECHNOLOGY_DATA: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/device/`;

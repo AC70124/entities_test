@@ -1,0 +1,10 @@
+export const ALL_DATA: string = 'http://localhost:8087/entities/technologies/all/new';
+// export const UNIQUE_STORES: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/uniquestores`;
+// export const CLEAR_CACHE: string = `/Enterprise/v1/Security/adaptiveNetwork/clearCache`;
+export const TE_SITE: string = `http://localhost:8087/entities/technologies/alert/thousandeyes/`;
+export const MERAKI_SITE: string = `http://localhost:8087/entities//technologies/alert/meraki/`;
+export const ISR_SITE: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/alert/aerohive/`;
+export const CRADLEPOINT_SITE: string = `http://localhost:8087/entities//technologies/alert/cradlepoint/`;
+export const MIST_SITE: string = `http://localhost:8087/entities/technologies/alert/mist/`;
+export const SITE_DATA: string = `http://localhost:8087/entities/technologies/entity/`;
+// export const TECHNOLOGY_DATA: string = `/Enterprise/v1/Security/adaptiveNetwork/technologies/device/`;

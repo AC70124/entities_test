@@ -1,0 +1,42 @@
+.DS_Store
+node_modules
+dist
+centurylinkcloud-*.tgz
+centurylink-*.tgz
+
+#common files
+.prettierrc
+/*.env.*
+/public
+/tools
+index.d.ts
+index-component.d.ts
+
+/tests/e2e/videos/
+/tests/e2e/screenshots/
+/tests/e2e/reports/
+/tests/unit/reports/
+
+# local env files
+.env.local
+.env.*.local
+
+# Log files
+npm*
+yarn*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# kubernetes credentials
+.kube
+
+# code coverage
+.nyc_output*
+coverage*

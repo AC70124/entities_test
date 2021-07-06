@@ -1,0 +1,225 @@
+try {
+  library(
+    identifier: 'jsl-jenkins-shared-library-local@release/20210624',
+    retriever: modernSCM(
+      [
+        $class: 'GitSCMSource',
+        remote: "/app/jenkins/git/jsl-jenkins-shared-library.git",
+        extensions: [
+          [$class: 'WipeWorkspace']
+        ]
+      ]
+    )
+  ) _
+} catch (Exception Ex) {
+  library(
+    identifier: 'jsl-jenkins-shared-library@release/20210624',
+    retriever: modernSCM(
+      [
+        $class: 'GitSCMSource',
+        remote: "git@github.com:CenturyLink/jsl-jenkins-shared-library.git",
+        credentialsId: 'SCMAUTO_SSH_DEVOPS_PIPELINE',
+        extensions: [
+          [$class: 'WipeWorkspace']
+        ]
+      ]
+    )
+  ) _
+}
+
+pipeline {
+
+    environment {
+
+      /*
+        Credentials:
+        GITHUB_TOKEN_CREDENTIALS github token, jenkins user password credential
+        GITHUB_SSH_CREDENTIALS github ssh private key, jenkins private key credential.
+        DOCKER_CREDENTIALS Docker access info, jenkins secret file credential with environment variables to export
+        KUBE_CREDENTIALS Kubernetes access info, jenkins secret file credential with environment variables to export
+        AMAZON_CREDENTIALS AWS access info, jenkins secret file credential with environment variables to export
+        SONARQUBE_CREDENTIALS Sonarqube access info, jenkins secret file credential with environment variables to export
+        GCP_CREDENTIALS GCP access info, jenkins secret file credential with environment variables to export
+        JIRA_CREDENTIALS Jira access info, jenkins secret file credential with environment variables to export
+        MSTEAMS_CREADENTIALS MS Teams access info, jenkins secret file credential with environment variables to export
+      */
+      GITHUB_TOKEN_CREDENTIALS = 'allyourbotsarebelongtous-token'
+      GITHUB_SSH_CREDENTIALS = 'allyourbotsarebelongtous'
+      DOCKER_CREDENTIALS = 'nexus-secrets'
+      KUBE_CREDENTIALS = 'kube-secret'
+      AMAZON_CREDENTIALS = ''
+      SONARQUBE_CREDENTIALS = ''
+      GCP_CREDENTIALS = ''
+      JIRA_CREDENTIALS = ''
+      MSTEAMS_CREADENTIALS = ''
+      KUBE_CREDENTIALS_TEST = 'kube-secret-test'
+
+      // Custom project variables
+      BRANCH_NAME = GIT_BRANCH.split('/')[-1].trim().toLowerCase()
+      COMMIT_ID = GIT_COMMIT.substring(0,7).trim().toLowerCase()
+      PULL_REQUEST="pr-${env.CHANGE_ID}"
+      PROJECT_NAME = 'po-adaptive-network'
+      DOCKER_REPO ='poadaptivenetwork'
+      IMAGE_NAME = "${env.PROJECT_NAME}"
+      IMAGE_TAG =  "${env.PULL_REQUEST}"
+      KUBE_DOCKER_SECRET_NAME = "${env.PROJECT_NAME}-${env.PULL_REQUEST}"
+    }
+
+    /*parameters {
+      //      https://www.jenkins.io/doc/book/pipeline/syntax/#parameters
+
+    }*/
+
+    /*
+    https://www.jenkins.io/doc/book/pipeline/syntax/#agent, env.IMAGE_NAME, env.IMAGE_TAG, env.KUBE_DOCKER_SECRET_NAME
+    Add agent sections in stages/stage if needed.
+    */
+    agent {
+      label 'Docker-enabled'
+    }
+
+    options {
+      /*
+      https://www.jenkins.io/doc/book/pipeline/syntax/#options
+      */
+
+      timeout(time: 1, unit: 'HOURS')
+      buildDiscarder(logRotator(numToKeepStr:'10', daysToKeepStr: '30'))
+      disableConcurrentBuilds()
+    }
+
+    /*
+    https://www.jenkins.io/doc/book/pipeline/syntax/#triggers
+    */
+    triggers {
+      cron('H 23 * * *')
+    }
+
+   stages {
+
+      stage('Cleaning old release resources') {
+        agent {
+            label 'Docker-enabled'
+        }
+        steps {
+          script {
+            withCredentials([usernamePassword(credentialsId: env.GITHUB_TOKEN_CREDENTIALS, usernameVariable: 'USERNAME', passwordVariable: 'ACCESS_TOKEN')]){
+                sh(script: """
+                rm -rf test-sample
+                git config credential.helper  "!f() {echo username=${USERNAME}; echo password=${ACCESS_TOKEN}; }"
+                git config --global user.email "cicdint0@lumen.com"
+                git clone https://\${USERNAME}:\${ACCESS_TOKEN}@github.com/CenturyLink/${env.PROJECT_NAME}.git test-sample
+                cd test-sample
+                git branch -a > branches.txt
+                cd ..
+                """, returnStdout: true)
+            }
+            def branches = sh(
+              returnStdout: true,
+              script: """
+              cat test-sample/branches.txt
+              """
+            )
+            def kube_credentials_test = env.KUBE_CREDENTIALS_TEST
+            def docker_credentials = env.DOCKER_CREDENTIALS
+            def branchesList = branches.split(' ')
+            def deployments = jslGetK8sDeployments(kube_credentials_test, docker_credentials)
+            def deploymentsList = deployments.split(' ')
+            sh(script: """
+            echo "Analyzing branches for removal of release deployments"
+            echo "${branchesList}"
+            echo "Current K8s deployments"
+            echo "${deploymentsList}"
+            """)
+            for (int i = 0; i < deploymentsList.size(); i++) {
+                def boolean found = false
+                def currentDeployment = deploymentsList[i]
+                def finalCurrentDeployment = currentDeployment.split('/')[1]
+                sh(script: """
+                echo "Analyzing deployment"
+                echo "${finalCurrentDeployment}"
+                """)
+                def branchToSearch = jslExtractBranchFromDeployment(kube_credentials_test, docker_credentials, finalCurrentDeployment.trim())
+                sh(script: """
+                echo "Searching branch"
+                echo "${branchToSearch}"
+                """)
+                if (deploymentsList[i].split('-').size() > 1) {
+                    environmentDeployment = deploymentsList[i].split('-')[-2]
+                } else {
+                    environmentDeployment = deploymentsList[i]
+                }
+                        sh(script: """
+                        echo "environmentDeployment"
+                        echo "${environmentDeployment}"
+                        """)
+                def inMaster = false
+                if (environmentDeployment == 'master') {
+                    inMaster = true
+                }
+                        sh(script: """
+                        echo "In master"
+                        echo "${inMaster}"
+                        """)
+                for (int j = 0; j < branchesList.size() && !found && !inMaster; j++) {
+                    def isRelease = false
+                    def branchNow = branchesList[j]
+                            sh(script:"""
+                            echo "step"
+                            echo "${j}"
+                            echo "branchNow"
+                            echo "${branchNow}"
+                            """)
+                    if (branchNow.split('/').size() > 1) {
+                        if (branchNow.split('/')[-2] == 'release') {
+                            isRelease = true
+                        }
+                    }
+
+                    def compareBranch = branchNow.split('/')[-1]
+                            sh(script: """
+                            echo "Comparing branches"
+                            echo "${compareBranch}"
+                            """)
+                    def remoteBranch = "remotes/origin/release/" + compareBranch
+                    if (branchNow.trim() == remoteBranch.trim()) {
+                      sh(script: """
+                      echo "branch ${branchToSearch} was found"
+                      """)
+                        found = true
+                    }
+                }
+                // If we are in a release branch, not master, and found is false, prune deployment
+                if (inMaster == false && !found) {
+                            sh(script: """
+                            echo "Prunning deployment"
+                            echo "branch"
+                            echo "${branchToSearch}"
+                            """)
+                    jslPruneDeployment(branchToSearch, env.PROJECT_NAME)
+                }
+            }
+          }
+        }
+      }
+
+      stage('Cleanup') {
+        agent {
+              label 'Docker-enabled'
+          }
+        steps {
+          script {
+            string closed_prs = jslGetClosedPRs()
+            if (closed_prs.trim()) {
+              closed_prs.split(' ').each {
+                  jslProcessClosedPR(it.trim())
+              }
+            }
+            else {
+              println "There are no closed PRs in the time slice to check."
+            }
+          }
+        }
+      }
+    }
+}

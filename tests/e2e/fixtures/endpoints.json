@@ -1,0 +1,10 @@
+{
+  "/path-to-visit": {
+    "GET": {
+      "get-key": "/get-endpoint-path"
+    },
+    "POST": {
+      "post-key": "/post-endpoint-path"
+    }
+  }
+}

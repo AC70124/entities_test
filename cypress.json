@@ -1,0 +1,10 @@
+{
+  "baseUrl": "https://localhost:9090",
+  "chromeWebSecurity": false,
+  "numTestsKeptInMemory": 0,
+  "pluginsFile": "tests/e2e/plugins/index.js",
+  "reporter": "junit",
+  "reporterOptions": {
+      "mochaFile": "tests/e2e/reports/cypress-browser.[hash].xml"
+  }
+}
